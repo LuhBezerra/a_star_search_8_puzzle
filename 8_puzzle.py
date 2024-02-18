@@ -1,6 +1,5 @@
 from queue import PriorityQueue
 
-
 def manhattan_distance(current_state, goal_state, verbose=False):
     total_distance = 0
     moves = []
@@ -54,40 +53,54 @@ def a_star_search(initial, goal):
 
     visited = set()
     queue = PriorityQueue()
-    queue.put((manhattan_distance(initial, goal), 0, initial, []))
+    queue.put((
+        manhattan_distance(initial, goal), # custo total [f(n) = g(n) + h(n) -> f(n) = 0 + h(n) = h(n)]
+        0, # custo do caminho
+        initial,  # estado atual
+        [],  # caminho
+        [initial] # histórico de estados
+        ))
 
     while not queue.empty():
-        total_cost, path_cost, current, path = queue.get()
-        current_key = state_to_key(current)
-        heuristic, moves = manhattan_distance(current, goal, verbose=path)
+        total_cost, path_cost, current_state, path, states = queue.get()
+        current_key = state_to_key(current_state)
+        heuristic, moves = manhattan_distance(current_state, goal, verbose=path)
 
         if (path): 
             print()
             print("#############################################")
             print("Explorando caminho:", ' -> '.join(path) or 'inicial', f"com custo de caminho g(n) {path_cost} e heurística h(n) {heuristic}")
-            print_state(current)
+            print_state(current_state)
 
-        if current == goal:
+        if current_state == goal:
             print("Caminho final encontrado com custo total:", total_cost)
-            return path
+            return path, states
 
         if current_key not in visited:
             visited.add(current_key)
 
-            for neighbor, action in get_neighbors(current):
+            for neighbor, action in get_neighbors(current_state):
                 if state_to_key(neighbor) not in visited:
                     cost = path_cost + 1
+
+                    states_copy = states[:]  # Cria uma cópia do histórico de estados
+                    states_copy.append(neighbor)
+
                     future_heuristic, moves = manhattan_distance(neighbor, goal, verbose=True)
-                    queue.put((cost + future_heuristic, cost, neighbor, path + [action]))
+                    queue.put((cost + future_heuristic, cost, neighbor, path + [action], states_copy))
 
                     print()
                     print(f"Ação: {action}, g(n): {cost} h(n): {future_heuristic} e f(n): {cost + future_heuristic}")
                     print_state(neighbor)
                     print_state(moves)
 
-    return None
+    return None, None
 
-# initial_state = [[2, 3, 6], [1, 8, 4], [7, 0, 5]]
+# initial_state = [
+#     [2, 3, 6], 
+#     [1, 8, 4], 
+#     [7, 0, 5]
+#     ]
 initial_state = [
     [2, 8, 3], 
     [1, 6, 4], 
@@ -95,11 +108,15 @@ initial_state = [
     ]
 goal_state = [[1, 2, 3], [8, 0, 4], [7, 6, 5]]
 
-solution_path = a_star_search(initial_state, goal_state)
+solution_path, history = a_star_search(initial_state, goal_state)
 
 if solution_path:
     print("Solução encontrada:")
     for move in solution_path:
         print(f"Movimento do zero: {move}")
+    print()
+    print("Histórico de estados:")
+    for state in history:
+        print_state(state)
 else:
     print("Solução não encontrada.")
